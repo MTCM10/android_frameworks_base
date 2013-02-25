@@ -651,21 +651,29 @@ public class QualcommSharedRIL extends RIL implements CommandsInterface {
             case RIL_INT_RADIO_ON:
             case RIL_INT_RADIO_ON_NG:
             case RIL_INT_RADIO_ON_HTC:
-                if (mIccHandler == null) {
-                    handlerThread = new HandlerThread("IccHandler");
-                    mIccThread = handlerThread;
+               if (SystemProperties.getBoolean("ro.telephony.no_icc", false) == true) {
+                    // We don't want to poll ICC events if this is a phone that doesn't 
+                    // support it, such as the Motorola Triumph
+                    radioState = CommandsInterface.RadioState.RADIO_ON;
+                }
+                else {
+                    if (mIccHandler == null) {
+                        handlerThread = new HandlerThread("IccHandler");
+                        mIccThread = handlerThread;
 
                     mIccThread.start();
 
-                    looper = mIccThread.getLooper();
-                    mIccHandler = new IccHandler(this,looper);
-                    mIccHandler.run();
+                        looper = mIccThread.getLooper();
+                        mIccHandler = new IccHandler(this,looper);
+                        mIccHandler.run();
+                    }
+                        radioState = CommandsInterface.RadioState.RADIO_ON;
                 }
-                radioState = CommandsInterface.RadioState.RADIO_ON;
+                setRadioState(radioState);
                 break;
             default:
                 throw new RuntimeException("Unrecognized RIL_RadioState: " + stateCode);
-        }
+                }
 
         setRadioState (radioState);
     }
